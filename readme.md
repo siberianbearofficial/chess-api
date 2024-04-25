@@ -189,7 +189,7 @@ Response:
 }
 ```
 
-**DELETE** `/moves/last` - отменить последний ход
+**DELETE** `/moves/last` - отменяет последний ход
 
 Request:
 
