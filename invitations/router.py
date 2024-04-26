@@ -34,18 +34,18 @@ async def get_invitations_handler(invitations_service: InvitationsServiceDep,
     }
 
 
-@router.get('/{uuid}')
+@router.get('/{code}')
 @exception_handler
 async def get_invitation_handler(authentication_service: AuthenticationServiceDep,
                                  invitations_service: InvitationsServiceDep,
                                  uow: UOWDep,
-                                 uuid: UUID,
+                                 code: str,
                                  authorization: AuthenticationDep = None):
     author = await authentication_service.authenticated_user(uow, authorization)
     if not author:
         raise NotAuthenticatedError
 
-    invitation = await invitations_service.get_invitation(uow, uuid)
+    invitation = await invitations_service.get_invitation(uow, code)
     if not invitation:
         raise InvitationNotFoundError
 
@@ -66,29 +66,29 @@ async def post_invitation_handler(uow: UOWDep,
     if not author:
         raise NotAuthenticatedError
 
-    uuid = await invitations_service.add_invitation(uow, invitation)
+    code = await invitations_service.add_invitation(uow, invitation)
     return {
-        'data': str(uuid),
+        'data': code,
         'detail': 'Invitation was added.'
     }
 
 
-@router.delete('/{uuid}')
+@router.delete('/{code}')
 @exception_handler
 async def delete_invitation_handler(uow: UOWDep,
                                     authentication_service: AuthenticationServiceDep,
                                     invitations_service: InvitationsServiceDep,
-                                    uuid: UUID,
+                                    code: str,
                                     authorization: AuthenticationDep = None):
     author = await authentication_service.authenticated_user(uow, authorization)
     if not author:
         raise NotAuthenticatedError
 
-    invitation_with_this_uuid = await invitations_service.get_invitation(uow, uuid)
+    invitation_with_this_uuid = await invitations_service.get_invitation(uow, code)
     if not invitation_with_this_uuid:
         raise InvitationNotFoundError
 
-    await invitations_service.delete_invitation(uow, uuid)
+    await invitations_service.delete_invitation(uow, code)
     return {
         'data': None,
         'detail': 'Invitation was deleted.'

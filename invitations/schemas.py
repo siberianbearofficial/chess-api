@@ -5,7 +5,6 @@ from uuid import UUID
 
 
 class InvitationRead(BaseModel):
-    uuid: UUID
     code: str
     board: UUID
     created_at: datetime
