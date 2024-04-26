@@ -33,13 +33,14 @@ class Board(Base):
             white=self.white,
             black=self.black,
             created_at=self.created_at,
+            status=self.status,
             state=board_state_from_str(self.state)
         )
 
 
 def board_state_from_str(state):
-    board = chess.Board(state)
-    print(board)
+    # board = chess.Board(state)
+    # print(board)
     return {
         'a1': {
             'figure': 'queen',

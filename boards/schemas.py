@@ -15,8 +15,8 @@ class BoardRead(BaseModel):
     mode: str
     privacy: str
     invited: list[UUID]
-    white: UUID
-    black: UUID
+    white: UUID | None
+    black: UUID | None
     created_at: datetime
     status: str
     state: dict[str, BoardCell]
