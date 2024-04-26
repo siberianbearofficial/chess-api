@@ -1,28 +1,57 @@
-import chess
-import chess.svg
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
-board = chess.Board()
+from solutions.router import router as solutions_router
 
-print(*board.legal_moves)
+from utils.config import VERSION
 
-print(chess.Move.from_uci("a8a1") in board.legal_moves)
+app = FastAPI(
+    title='Chess Backend',
+    description='Some interesting functionality',
+    version=VERSION
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        '*'
+    ],
+    allow_credentials=True,
+    allow_methods=['*'],
+    allow_headers=['*']
+)
 
 
-print(board.push_san("e4"))
-
-print(board.push_san("e5"))
-
-print(board.push_san("Qh5"))
-
-print(board.push_san("Nc6"))
-
-print(board.push_san("Bc4"))
-
-print(board.push_san("Nf6"))
-
-print(board.push_san("Qxf7"))
+@app.get(f'/', tags=['Setup'])
+async def get_root_handler():
+    return {
+        'data': 'Chess Backend',
+        'detail': f'Visit /docs or /redoc for the full documentation.'
+    }
 
 
-print(board.is_checkmate())
+@app.get('/readyz', tags=['Setup'])
+async def get_readyz_handler():
+    return {
+        'data': 'Ready',
+        'detail': 'Backend is ready.'
+    }
 
-print(chess.svg.board(board), file=open('board.svg', 'w'))
+
+@app.get('/healthz', tags=['Setup'])
+async def get_healthz_handler():
+    return {
+        'data': 'Health',
+        'detail': 'Backend is healthy.'
+    }
+
+
+@app.get('/api/v1/version', tags=['Setup'])
+async def get_version_handler():
+    return {
+        'data': VERSION,
+        'detail': 'Version was selected.'
+    }
+
+
+app.include_router(solutions_router, prefix='/api/v1')
