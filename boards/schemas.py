@@ -32,5 +32,13 @@ class BoardCreate(BaseModel):
 
 
 class BoardUpdate(BaseModel):
-    name: str
-    permissions: list[str]
+    mode: str | None
+    privacy: str | None
+    invited: list[UUID] | None
+    white: UUID | None
+    black: UUID | None
+
+
+class BoardInvite(BaseModel):
+    invitation: str
+    invited: UUID

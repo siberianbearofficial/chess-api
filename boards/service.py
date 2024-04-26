@@ -1,11 +1,12 @@
 from datetime import datetime
+from json import dumps
 from uuid import UUID, uuid4
 import chess
 
 from utils.unitofwork import IUnitOfWork
 
 from boards.repository import BoardsRepository
-from boards.schemas import BoardCreate
+from boards.schemas import BoardCreate, BoardUpdate
 
 
 class BoardsService:
@@ -16,10 +17,10 @@ class BoardsService:
         filter_by = dict()
         if owner:
             filter_by['owner'] = owner
-        if invited:
-            filter_by['invited'] = invited
         async with uow:
             boards = await self.boards_repository.find_all(uow.session, **filter_by)
+            if invited:
+                boards = list(filter(lambda board: invited in board.invited, boards))
             return boards
 
     async def get_board(self, uow: IUnitOfWork, uuid: UUID):
@@ -46,14 +47,22 @@ class BoardsService:
             await uow.commit()
             return uuid
 
-    # async def update_board(self, uow: IUnitOfWork, uuid: UUID, board: BoardUpdate):
-    #     async with uow:
-    #         board_dict = {
-    #             'name': board.name,
-    #             'permissions': dumps(board.permissions)
-    #         }
-    #         await self.boards_repository.edit_one(uow.session, uuid, board_dict)
-    #         await uow.commit()
+    async def update_board(self, uow: IUnitOfWork, uuid: UUID, board: BoardUpdate):
+        async with uow:
+            board_dict = dict()
+            if board.mode:
+                board_dict['mode'] = board.mode
+            if board.privacy:
+                board_dict['privacy'] = board.privacy
+            if board.invited:
+                board_dict['invited'] = dumps([str(el) for el in board.invited])
+            if board.white:
+                board_dict['white'] = board.white
+            if board.black:
+                board_dict['black'] = board.black
+            await self.boards_repository.edit_one(uow.session, uuid, board_dict)
+            await uow.commit()
+            return uuid
 
     async def delete_board(self, uow: IUnitOfWork, uuid: UUID):
         async with uow:

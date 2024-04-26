@@ -2,16 +2,18 @@ from uuid import UUID
 
 from fastapi import APIRouter
 
+from invitations.exceptions import InvitationNotFoundError
 from utils.exceptions import exception_handler
 from utils.dependency import (AuthenticationServiceDep,
                               BoardsServiceDep,
                               AuthenticationDep,
-                              UOWDep)
+                              UOWDep, InvitationsServiceDep)
 
 from authentication.exceptions import NotAuthenticatedError
 
-from boards.schemas import BoardCreate, BoardUpdate
+from boards.schemas import BoardCreate, BoardUpdate, BoardInvite
 from boards.exceptions import *
+from utils.logic import equal_uuids
 
 router = APIRouter(prefix='/boards', tags=['Boards'])
 
@@ -71,6 +73,39 @@ async def post_board_handler(uow: UOWDep,
     return {
         'data': str(uuid),
         'detail': 'Board was added.'
+    }
+
+
+@router.post('/{uuid}/invited')
+@exception_handler
+async def post_board_invited_handler(uow: UOWDep,
+                                     authentication_service: AuthenticationServiceDep,
+                                     boards_service: BoardsServiceDep,
+                                     invitations_service: InvitationsServiceDep,
+                                     invite: BoardInvite,
+                                     uuid: UUID,
+                                     authorization: AuthenticationDep = None):
+    author = await authentication_service.authenticated_user(uow, authorization)
+    if not author:
+        raise NotAuthenticatedError
+
+    board = await boards_service.get_board(uow, uuid)
+    if not board:
+        raise BoardNotFoundError
+
+    invitations = await invitations_service.get_invitations(uow, code=invite.invitation)
+    if not invitations:
+        raise InvitationNotFoundError
+
+    if not equal_uuids(board.uuid, invitations[0].board):
+        raise UpdateBoardDenied  # явно другое исключение нужно
+
+    invited = board.invited + [invite.invited]
+
+    uuid = await boards_service.update_board(uow, board.uuid, BoardUpdate(invited=invited))
+    return {
+        'data': str(uuid),
+        'detail': 'Invited user was added to the board.'
     }
 
 

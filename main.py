@@ -5,6 +5,7 @@ from users.router import router as users_router
 from authentication.router import router as authentication_router
 from roles.router import router as roles_router
 from boards.router import router as boards_router
+from invitations.router import router as invitations_router
 
 from utils.config import VERSION
 
@@ -61,3 +62,4 @@ app.include_router(users_router, prefix='/api/v1')
 app.include_router(authentication_router, prefix='/api/v1')
 app.include_router(roles_router, prefix='/api/v1')
 app.include_router(boards_router, prefix='/api/v1')
+app.include_router(invitations_router, prefix='/api/v1')

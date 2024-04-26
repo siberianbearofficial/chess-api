@@ -2,6 +2,7 @@ from datetime import datetime
 from uuid import UUID, uuid4
 import chess
 
+from invitations.models import Invitation
 from utils.unitofwork import IUnitOfWork
 
 from invitations.repository import InvitationsRepository
@@ -12,10 +13,12 @@ class InvitationsService:
     def __init__(self, invitations_repository: InvitationsRepository):
         self.invitations_repository = invitations_repository
 
-    async def get_invitations(self, uow: IUnitOfWork, board: UUID | None = None):
+    async def get_invitations(self, uow: IUnitOfWork, board: UUID | None = None, code: str | None = None):
         filter_by = dict()
         if board:
             filter_by['board'] = board
+        if code:
+            filter_by['code'] = code
         async with uow:
             invitations = await self.invitations_repository.find_all(uow.session, **filter_by)
             return invitations
