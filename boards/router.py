@@ -93,11 +93,11 @@ async def post_board_invited_handler(uow: UOWDep,
     if not board:
         raise BoardNotFoundError
 
-    invitations = await invitations_service.get_invitations(uow, code=invite.invitation)
-    if not invitations:
+    invitation = await invitations_service.get_invitation(uow, code=invite.invitation)
+    if not invitation:
         raise InvitationNotFoundError
 
-    if not equal_uuids(board.uuid, invitations[0].board):
+    if not equal_uuids(board.uuid, invitation.board):
         raise UpdateBoardDenied  # явно другое исключение нужно
 
     invited = board.invited + [invite.invited]
