@@ -19,12 +19,20 @@ Authorization: `Bearer {token}` - подставляется `id_token` из Goo
   "owner": "some-uuid",
   "mode": "online",
   "privacy": "private",
-  "invited": "some-uuid",
+  "invited": ["some-uuid", "some-uuid", ...],
+  "white": "some-uuid",
+  "black": "some-uuid",
   "created_at": "some-datetime",
-  "status": "progress",  // "progress" | "check" | "checkmate" | "stalemate"
+  "status": "progress",  // "created" | "progress" | "check" | "checkmate" | "stalemate"
   "state": {
-    "a1": "queen_owner",
-    "e5": "king_invited"
+    "a1": {
+      "figure": "queen",
+      "actor": "white"
+    },
+    "e5": {
+      "figure": "king",
+      "actor": "black"
+    }
   }
 }
 ```
@@ -54,7 +62,7 @@ Response:
 }
 ```
 
-**PUT** `/boards/some-uuid/invited` - добавляет второго игрока к доске
+**POST** `/boards/some-uuid/invited` - добавляет второго игрока к доске
 
 Request:
 
@@ -70,7 +78,7 @@ Response:
 ```json
 {
   "data": "some-uuid",
-  "detail": "Board was updated."
+  "detail": "Invited user was added to the board."
 }
 ```
 
