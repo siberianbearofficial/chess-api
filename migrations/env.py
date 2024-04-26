@@ -14,6 +14,7 @@ from roles.models import *
 from users.models import *
 from boards.models import *
 from invitations.models import *
+from moves.models import *
 from utils.config import DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS
 from utils.database import metadata, Base
 

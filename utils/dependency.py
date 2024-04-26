@@ -3,10 +3,15 @@ from typing import Annotated
 from fastapi import Depends, Header
 
 from authentication.service import AuthenticationService
+
 from boards.repository import BoardsRepository
 from boards.service import BoardsService
+
 from invitations.repository import InvitationsRepository
 from invitations.service import InvitationsService
+
+from moves.repository import MovesRepository
+from moves.service import MovesService
 
 from roles.repository import RolesRepository
 from roles.service import RolesService
@@ -27,6 +32,9 @@ boards_service = BoardsService(boards_repository)
 
 invitations_repository = InvitationsRepository()
 invitations_service = InvitationsService(invitations_repository)
+
+moves_repository = MovesRepository()
+moves_service = MovesService(moves_repository)
 
 authentication_service = AuthenticationService(users_repository)
 
@@ -51,11 +59,16 @@ async def get_invitations_service():
     return invitations_service
 
 
+async def get_moves_service():
+    return moves_service
+
+
 UsersServiceDep = Annotated[UsersService, Depends(get_users_service)]
 AuthenticationServiceDep = Annotated[AuthenticationService, Depends(get_authentication_service)]
 RolesServiceDep = Annotated[RolesService, Depends(get_roles_service)]
 BoardsServiceDep = Annotated[BoardsService, Depends(get_boards_service)]
 InvitationsServiceDep = Annotated[InvitationsService, Depends(get_invitations_service)]
+MovesServiceDep = Annotated[MovesService, Depends(get_moves_service)]
 
 UOWDep = Annotated[IUnitOfWork, Depends(UnitOfWork)]
 AuthenticationDep = Annotated[str | None, Header()]
