@@ -30,15 +30,16 @@ class InvitationsService:
 
     async def add_invitation(self, uow: IUnitOfWork, invitation: InvitationCreate):
         async with uow:
-            code = await self.__generate_invitation_code()
+            uuid = uuid4()
             invitation_dict = {
-                'code': code,
+                'uuid': uuid,
+                'code': await self.__generate_invitation_code(),
                 'board': invitation.board,
                 'created_at': datetime.now(tz=None)
             }
             await self.invitations_repository.add_one(uow.session, invitation_dict)
             await uow.commit()
-            return code
+            return uuid
 
     @staticmethod
     async def __generate_invitation_code():

@@ -66,9 +66,9 @@ async def post_invitation_handler(uow: UOWDep,
     if not author:
         raise NotAuthenticatedError
 
-    code = await invitations_service.add_invitation(uow, invitation)
+    uuid = await invitations_service.add_invitation(uow, invitation)
     return {
-        'data': str(code),
+        'data': str(uuid),
         'detail': 'Invitation was added.'
     }
 
