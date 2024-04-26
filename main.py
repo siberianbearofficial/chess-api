@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from users.router import router as users_router
+from authentication.router import router as authentication_router
+from roles.router import router as roles_router
 
 from utils.config import VERSION
 
@@ -55,3 +57,5 @@ async def get_version_handler():
 
 
 app.include_router(users_router, prefix='/api/v1')
+app.include_router(authentication_router, prefix='/api/v1')
+app.include_router(roles_router, prefix='/api/v1')
