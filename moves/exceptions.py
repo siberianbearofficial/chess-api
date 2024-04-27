@@ -24,3 +24,8 @@ class UpdateMoveDenied(PermissionError):
 class DeleteMoveDenied(PermissionError):
     def __str__(self):
         return 'Author does not have delete_moves permission.'
+
+
+class IllegalMoveDenied(PermissionError):
+    def __str__(self):
+        return 'Illegal move. Consider trying another one.'

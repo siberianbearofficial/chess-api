@@ -4,6 +4,7 @@ import chess
 
 from boards.exceptions import BoardNotFoundError
 from boards.repository import BoardsRepository
+from moves.exceptions import IllegalMoveDenied
 from utils.unitofwork import IUnitOfWork
 
 from moves.repository import MovesRepository
@@ -22,7 +23,7 @@ class MovesService:
         filter_by = dict()
         if board:
             filter_by['board'] = board
-        if actor and actor.strip().lower() in ('white', 'black'):  # todo надо эту проверку на pydantic схему переложить
+        if actor:
             filter_by['actor'] = actor.strip().lower()
         async with uow:
             move_dicts = await self.moves_repository.all(uow.session, **filter_by)
@@ -68,7 +69,12 @@ class MovesService:
             prev_state = board_dict['state']
 
             board = chess.Board(prev_state)
-            board.push_uci(f'{move.src}{move.dst}')  # в этот момент все отвалится, если был передан невалидный ход
+
+            try:
+                board.push_uci(f'{move.src}{move.dst}')  # в этот момент все отвалится, если был передан невалидный ход
+            except chess.IllegalMoveError | chess.InvalidMoveError | chess.AmbiguousMoveError:
+                raise IllegalMoveDenied
+
             board_dict['state'] = board.fen()
             outcome = board.outcome()
             if outcome:
