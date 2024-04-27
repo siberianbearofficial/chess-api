@@ -58,6 +58,35 @@ class SQLAlchemyRepository(AbstractRepository):
         res = [row[0].to_read_model() for row in res.all()]
         return res
 
+    async def get(self, session, filter_dict: dict = None, **filter_by):
+        stmt = select(self.model).filter_by(**filter_by).limit(1)
+        res = await session.execute(stmt)
+        res = res.all()
+        if res and res[0]:
+            return self.__from_dict(res[0][0].__dict__)
+        return None
+
+    async def all(self, session, filter_dict: dict = None, **filter_by):
+        stmt = select(self.model).filter_by(**filter_by)
+
+        if filter_dict:
+            for key, val in filter_dict.items():
+                if key in self.model.__dict__:
+                    if val[0] == 'between':
+                        stmt = stmt.filter(and_(self.model.__dict__[key] >= val[1],
+                                                self.model.__dict__[key] <= val[2]))
+
+        res = await session.execute(stmt)
+        return [self.__from_dict(row[0].__dict__) for row in res.all()]
+
+    @staticmethod
+    def __from_dict(dct):
+        new = dict()
+        for k, v in dct.items():
+            if not k.startswith('_'):
+                new[k] = v
+        return new
+
     async def find_one(self, session, filter_dict: dict = None, **filter_by):
         stmt = select(self.model).filter_by(**filter_by).limit(2)
         res = await session.execute(stmt)

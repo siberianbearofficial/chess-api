@@ -19,14 +19,4 @@ class Move(Base):
     src = Column(String, nullable=False)
     dst = Column(String, nullable=False)
     figure = Column(String, nullable=False)
-
-    def to_read_model(self):
-        return MoveRead(
-            uuid=self.uuid,
-            board=self.board,
-            actor=self.actor,
-            created_at=self.created_at,
-            src=self.src,
-            dst=self.dst,
-            figure=self.figure
-        )
+    board_prev_state = Column(String, nullable=False)

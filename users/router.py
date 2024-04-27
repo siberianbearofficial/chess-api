@@ -47,7 +47,7 @@ async def get_user_handler(users_service: UsersServiceDep,
     }
 
 
-@router.post('/')
+@router.post('')
 @exception_handler
 async def post_users_handler(users_service: UsersServiceDep,
                              roles_service: RolesServiceDep,

@@ -74,29 +74,6 @@ async def post_move_handler(uow: UOWDep,
     }
 
 
-# @router.put('/{uuid}')
-# @exception_handler
-# async def put_move_handler(uow: UOWDep,
-#                            authentication_service: AuthenticationServiceDep,
-#                            moves_service: MovesServiceDep,
-#                            uuid: UUID,
-#                            move: MoveUpdate,
-#                            authorization: AuthenticationDep = None):
-#     author = await authentication_service.authenticated_user(uow, authorization)
-#     if not author:
-#         raise NotAuthenticatedError
-#
-#     move_with_this_uuid = await moves_service.get_move(uow, uuid)
-#     if not move_with_this_uuid:
-#         raise MoveNotFoundError
-#
-#     uuid = await moves_service.update_move(uow, uuid, move)
-#     return {
-#         'data': str(uuid),
-#         'detail': 'Move was updated.'
-#     }
-
-
 @router.delete('/last')
 @exception_handler
 async def delete_move_handler(uow: UOWDep,
@@ -120,29 +97,7 @@ async def delete_move_handler(uow: UOWDep,
     if not uuid:
         raise MoveNotFoundError  # не та ошибка, по-хорошему
 
-    uuid = await moves_service.delete_move(uow, uuid)
-    return {
-        'data': str(uuid),
-        'detail': 'Move was deleted.'
-    }
-
-
-@router.delete('/{uuid}')
-@exception_handler
-async def delete_move_handler(uow: UOWDep,
-                              authentication_service: AuthenticationServiceDep,
-                              moves_service: MovesServiceDep,
-                              uuid: UUID,
-                              authorization: AuthenticationDep = None):
-    author = await authentication_service.authenticated_user(uow, authorization)
-    if not author:
-        raise NotAuthenticatedError
-
-    move_with_this_uuid = await moves_service.get_move(uow, uuid)
-    if not move_with_this_uuid:
-        raise MoveNotFoundError
-
-    uuid = await moves_service.delete_move(uow, uuid)
+    uuid = await moves_service.undo_move(uow, uuid)
     return {
         'data': str(uuid),
         'detail': 'Move was deleted.'

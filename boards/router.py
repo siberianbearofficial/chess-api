@@ -100,9 +100,10 @@ async def post_board_invited_handler(uow: UOWDep,
     if not equal_uuids(board.uuid, invitation.board):
         raise UpdateBoardDenied  # явно другое исключение нужно
 
-    invited = board.invited + [invite.invited]
+    if invite.invited not in board.invited:
+        invited = board.invited + [invite.invited]
+        uuid = await boards_service.update_board(uow, board.uuid, BoardUpdate(invited=invited))
 
-    uuid = await boards_service.update_board(uow, board.uuid, BoardUpdate(invited=invited))
     return {
         'data': str(uuid),
         'detail': 'Invited user was added to the board.'
@@ -147,8 +148,8 @@ async def delete_board_handler(uow: UOWDep,
     if not board_with_this_uuid:
         raise BoardNotFoundError
 
-    await boards_service.delete_board(uow, uuid)
+    uuid = await boards_service.delete_board(uow, uuid)
     return {
-        'data': None,
+        'data': str(uuid),
         'detail': 'Board was deleted.'
     }

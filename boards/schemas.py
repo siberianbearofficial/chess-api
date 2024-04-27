@@ -17,6 +17,7 @@ class BoardRead(BaseModel):
     invited: list[UUID]
     white: UUID | None
     black: UUID | None
+    winner: str | None
     created_at: datetime
     status: str
     state: dict[str, BoardCell]

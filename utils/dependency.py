@@ -27,14 +27,14 @@ roles_service = RolesService(roles_repository)
 users_repository = UsersRepository()
 users_service = UsersService(users_repository)
 
-boards_repository = BoardsRepository()
-boards_service = BoardsService(boards_repository)
-
 invitations_repository = InvitationsRepository()
 invitations_service = InvitationsService(invitations_repository)
 
+boards_repository = BoardsRepository()
+boards_service = BoardsService(boards_repository, invitations_repository)
+
 moves_repository = MovesRepository()
-moves_service = MovesService(moves_repository)
+moves_service = MovesService(moves_repository, boards_repository)
 
 authentication_service = AuthenticationService(users_repository)
 
