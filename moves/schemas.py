@@ -23,8 +23,3 @@ class MoveCreate(BaseModel):
     actor: Literal['white', 'black'] | None = None
     src: str
     dst: str
-
-
-class MoveUndo(BaseModel):
-    board: UUID
-    actor: Literal['white', 'black']
