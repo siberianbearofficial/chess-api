@@ -38,23 +38,13 @@ class Board(Base):
         )
 
 
-figures = {
-    'r': 'rook',
-    'n': 'knight',
-    'b': 'bishop',
-    'q': 'queen',
-    'k': 'king',
-    'p': 'pawn'
-}
-
-
 def board_state_from_str(state):
     board = chess.Board(state)
     print(board)
     state = dict()
     for square, piece in board.piece_map().items():
         state[chess.SQUARE_NAMES[square]] = {
-            'figure': figures[str(piece).lower()],
+            'figure': chess.piece_name(piece.piece_type),
             'actor': 'white' if piece.color == chess.WHITE else 'black'
         }
     return state
