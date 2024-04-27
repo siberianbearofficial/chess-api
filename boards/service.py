@@ -41,7 +41,7 @@ class BoardsService:
                 'black': None,
                 'created_at': datetime.now(tz=None),
                 'status': 'created',
-                'state': chess.Board().board_fen()
+                'state': chess.Board().fen()
             }
             await self.boards_repository.add_one(uow.session, board_dict)
             await uow.commit()

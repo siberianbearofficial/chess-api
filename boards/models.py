@@ -34,17 +34,16 @@ class Board(Base):
             black=self.black,
             created_at=self.created_at,
             status=self.status,
-            state=board_state_from_str(self.state)
+            state=board_state_from_fen(self.state)
         )
 
 
-def board_state_from_str(state):
-    board = chess.Board(state)
-    print(board)
+def board_state_from_fen(fen):
     state = dict()
-    for square, piece in board.piece_map().items():
-        state[chess.SQUARE_NAMES[square]] = {
-            'figure': chess.piece_name(piece.piece_type),
-            'actor': 'white' if piece.color == chess.WHITE else 'black'
-        }
+    for square, piece in chess.Board(fen).piece_map().items():
+        if 0 <= square < len(chess.SQUARE_NAMES):
+            state[chess.SQUARE_NAMES[square]] = {
+                'figure': chess.piece_name(piece.piece_type),
+                'actor': 'white' if piece.color == chess.WHITE else 'black'
+            }
     return state
