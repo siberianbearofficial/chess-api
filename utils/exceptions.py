@@ -18,30 +18,15 @@ def exception_handler(handler):
         try:
             res = await handler(*args, **kwargs)
         except (ValueError, ExistsError) as ex:
-            raise HTTPException(400, detail={
-                'data': None,
-                'detail': str(ex)
-            })
+            raise HTTPException(400, detail=str(ex))
         except AuthenticationError as ex:
-            raise HTTPException(401, detail={
-                'data': None,
-                'detail': str(ex)
-            })
+            raise HTTPException(401, detail=str(ex))
         except PermissionError as ex:
-            raise HTTPException(403, detail={
-                'data': None,
-                'detail': str(ex)
-            })
+            raise HTTPException(403, detail=str(ex))
         except NotFoundError as ex:
-            raise HTTPException(404, detail={
-                'data': None,
-                'detail': str(ex)
-            })
+            raise HTTPException(404, detail=str(ex))
         except Exception as ex:
-            raise HTTPException(500, detail={
-                'data': None,
-                'detail': str(ex)
-            })
+            raise HTTPException(500, detail=str(ex))
         else:
             return res
 
