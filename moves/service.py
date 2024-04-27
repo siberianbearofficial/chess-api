@@ -72,7 +72,7 @@ class MovesService:
 
             try:
                 board.push_uci(f'{move.src}{move.dst}')  # в этот момент все отвалится, если был передан невалидный ход
-            except chess.IllegalMoveError | chess.InvalidMoveError | chess.AmbiguousMoveError:
+            except:
                 raise IllegalMoveDenied
 
             board_dict['state'] = board.fen()
