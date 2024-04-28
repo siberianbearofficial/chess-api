@@ -25,7 +25,7 @@ class BoardsService:
         async with uow:
             board_dicts = await self.boards_repository.get_all(uow.session, **filter_by)
             if invited:
-                board_dicts = list(filter(lambda board: invited in json.loads(board['invited']), board_dicts))
+                board_dicts = list(filter(lambda board: str(invited) in json.loads(board['invited']), board_dicts))
             if as_dict:
                 return board_dicts
             return [self.boards_dict_to_read_model(board_dict) for board_dict in board_dicts]
