@@ -31,7 +31,7 @@ class MovesService:
                 return move_dicts
             return [self.moves_dict_to_read_model(move_dict) for move_dict in move_dicts]
 
-    async def get_move(self, uow: IUnitOfWork, move_uuid: uuid.UUID, as_dict: bool = False) -> MoveRead | dict:
+    async def get_move(self, uow: IUnitOfWork, move_uuid: uuid.UUID, as_dict: bool = False) -> MoveRead | dict | None:
         async with uow:
             move_dict = await self.moves_repository.get(uow.session, uuid=move_uuid)
             if not move_dict:
@@ -48,18 +48,13 @@ class MovesService:
             board = chess.Board(board_dict['state'])
             moves = list()
             for move in board.legal_moves:
-                move = move.uci()
-                src, dst = move[:2], move[2:]
-                src_square = chess.SQUARE_NAMES.index(src)
-                actor_from_lib = 'white' if board.color_at(src_square) else 'black'
-                src_piece = board.piece_at(src_square)
-                figure = chess.PIECE_NAMES[0 if not src_piece else src_piece.piece_type]
                 moves.append(LegalMove(
                     board=board_uuid,
-                    actor=actor or actor_from_lib,
-                    src=src,
-                    dst=dst,
-                    figure=figure
+                    actor=actor or ('white' if board.color_at(move.from_square) else 'black'),
+                    src=chess.square_name(move.from_square),
+                    dst=chess.square_name(move.to_square),
+                    figure=chess.piece_name(board.piece_at(move.from_square).piece_type),
+                    promotion=None if (move.promotion is None) else chess.piece_name(move.promotion)
                 ))
             return moves
 
@@ -72,7 +67,8 @@ class MovesService:
             created_at=move_dict.get('created_at'),
             src=move_dict.get('src'),
             dst=move_dict.get('dst'),
-            figure=move_dict.get('figure')
+            figure=move_dict.get('figure'),
+            promotion=move_dict.get('promotion')
         )
 
     @staticmethod
@@ -82,11 +78,12 @@ class MovesService:
             'board': move.board,
             'created_at': datetime.now(tz=None),
             'src': move.src,
-            'dst': move.dst
+            'dst': move.dst,
+            'promotion': move.promotion
         }
 
     async def add_move(self, uow: IUnitOfWork, move: MoveCreate):
-        async with uow:
+        async with (uow):
             board_dict = await self.boards_repository.get(uow.session, uuid=move.board)
             if not board_dict:
                 raise BoardNotFoundError
@@ -95,7 +92,12 @@ class MovesService:
             board = chess.Board(prev_state)
 
             try:
-                board.push_uci(f'{move.src}{move.dst}')  # в этот момент все отвалится, если был передан невалидный ход
+                if move.promotion is None:
+                    uci = f'{move.src}{move.dst}'
+                else:
+                    promotion = chess.PIECE_SYMBOLS[chess.PIECE_NAMES.index(move.promotion)]
+                    uci = f'{move.src}{move.dst}{promotion}'
+                board.push_uci(uci)  # в этот момент все отвалится, если был передан невалидный ход
             except:
                 raise IllegalMoveDenied
 

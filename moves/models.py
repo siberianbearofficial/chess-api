@@ -17,6 +17,7 @@ class Move(IModel):
     src = Column(String, nullable=False)
     dst = Column(String, nullable=False)
     figure = Column(String, nullable=False)
+    promotion = Column(String, nullable=True)
     board_prev_state = Column(String, nullable=False)
 
     def dict(self):
@@ -28,5 +29,6 @@ class Move(IModel):
             'src': self.src,
             'dst': self.dst,
             'figure': self.figure,
+            'promotion': self.promotion,
             'board_prev_state': self.board_prev_state
         }

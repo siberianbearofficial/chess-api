@@ -13,6 +13,7 @@ class MoveRead(BaseModel):
     src: str  # по-хорошему, тут нужно написать кастомные валидаторы, чтобы pydantic по ним отсекал все неподходящее
     dst: str
     figure: Literal['queen', 'king', 'rook', 'bishop', 'knight', 'pawn']
+    promotion: Literal['queen', 'king', 'rook', 'bishop', 'knight', 'pawn'] | None
 
     class Config:
         from_attributes = True
@@ -23,6 +24,7 @@ class MoveCreate(BaseModel):
     actor: Literal['white', 'black'] | None = None
     src: str
     dst: str
+    promotion: Literal['queen', 'king', 'rook', 'bishop', 'knight', 'pawn'] | None
 
 
 class LegalMove(BaseModel):
@@ -31,6 +33,7 @@ class LegalMove(BaseModel):
     src: str
     dst: str
     figure: Literal['queen', 'king', 'rook', 'bishop', 'knight', 'pawn'] | None
+    promotion: Literal['queen', 'king', 'rook', 'bishop', 'knight', 'pawn'] | None
 
     class Config:
         from_attributes = True
