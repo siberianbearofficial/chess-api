@@ -8,7 +8,7 @@ from moves.exceptions import IllegalMoveDenied
 from utils.unitofwork import IUnitOfWork
 
 from moves.repository import MovesRepository
-from moves.schemas import MoveCreate, MoveRead
+from moves.schemas import MoveCreate, MoveRead, LegalMove
 
 
 class MovesService:
@@ -39,6 +39,29 @@ class MovesService:
             if as_dict:
                 return move_dict
             return self.moves_dict_to_read_model(move_dict)
+
+    async def get_legal_moves(self, uow: IUnitOfWork,
+                              board_uuid: uuid.UUID,
+                              actor: str | None = None) -> list[LegalMove]:
+        async with uow:
+            board_dict = await self.boards_repository.get(uow.session, uuid=board_uuid)
+            board = chess.Board(board_dict['state'])
+            moves = list()
+            for move in board.legal_moves:
+                move = move.uci()
+                src, dst = move[:2], move[2:]
+                src_square = chess.SQUARE_NAMES.index(src)
+                actor_from_lib = 'white' if board.color_at(src_square) else 'black'
+                src_piece = board.piece_at(src_square)
+                figure = chess.PIECE_NAMES[0 if not src_piece else src_piece.piece_type]
+                moves.append(LegalMove(
+                    board=board_uuid,
+                    actor=actor or actor_from_lib,
+                    src=src,
+                    dst=dst,
+                    figure=figure
+                ))
+            return moves
 
     @staticmethod
     def moves_dict_to_read_model(move_dict: dict) -> MoveRead:

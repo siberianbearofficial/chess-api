@@ -23,3 +23,14 @@ class MoveCreate(BaseModel):
     actor: Literal['white', 'black'] | None = None
     src: str
     dst: str
+
+
+class LegalMove(BaseModel):
+    board: UUID
+    actor: Literal['white', 'black']
+    src: str
+    dst: str
+    figure: Literal['queen', 'king', 'rook', 'bishop', 'knight', 'pawn'] | None
+
+    class Config:
+        from_attributes = True

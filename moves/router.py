@@ -35,6 +35,25 @@ async def get_moves_handler(moves_service: MovesServiceDep,
     }
 
 
+@router.get('/legal')
+@exception_handler
+async def get_moves_handler(moves_service: MovesServiceDep,
+                            authentication_service: AuthenticationServiceDep,
+                            uow: UOWDep,
+                            board: UUID,
+                            actor: str | None = None,
+                            authorization: AuthenticationDep = None):
+    author = await authentication_service.authenticated_user(uow, authorization)
+    if not author:
+        raise NotAuthenticatedError
+
+    moves = await moves_service.get_legal_moves(uow, board_uuid=board, actor=actor)
+    return {
+        'data': moves,
+        'detail': 'Legal moves were selected.'
+    }
+
+
 @router.get('/last')
 @exception_handler
 async def get_move_handler(authentication_service: AuthenticationServiceDep,
