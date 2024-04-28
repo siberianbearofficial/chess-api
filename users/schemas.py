@@ -16,12 +16,12 @@ class UserRead(BaseModel):
 class UserCreate(BaseModel):
     username: str
     password: str
-    roles: list[UUID]
+    roles: list[UUID] = []
 
 
 class UserUpdate(BaseModel):
-    username: str
-    roles: list[UUID]
+    username: str = ''
+    roles: list[UUID] = []
 
 
 class UserWithPassword(BaseModel):

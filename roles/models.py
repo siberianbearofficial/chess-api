@@ -1,23 +1,20 @@
-from uuid import uuid4
-from json import loads
+import uuid
 
 from sqlalchemy import Column, String, Uuid
 
-from utils.database import Base
-
-from roles.schemas import RoleRead
+from utils.models import IModel
 
 
-class Role(Base):
+class Role(IModel):
     __tablename__ = 'role'
 
-    uuid = Column(Uuid, primary_key=True, default=uuid4)
+    uuid = Column(Uuid, primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
     permissions = Column(String)
 
-    def to_read_model(self):
-        return RoleRead(
-            uuid=self.uuid,
-            name=self.name,
-            permissions=loads(self.permissions)
-        )
+    def dict(self):
+        return {
+            'uuid': self.uuid,
+            'name': self.name,
+            'permissions': self.permissions
+        }

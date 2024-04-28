@@ -84,8 +84,6 @@ async def put_users_handler(users_service: UsersServiceDep,
     if not author:
         raise NotAuthenticatedError
 
-    validate_username(user.username)
-
     can_update = False
     if not equal_uuids(author.uuid, uuid):
         can_update = await roles_service.has_permission(uow, author, 'update_users')

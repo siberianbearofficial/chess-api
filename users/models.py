@@ -1,36 +1,25 @@
-from uuid import uuid4
+import uuid
 from datetime import datetime
-from json import loads
 
 from sqlalchemy import TIMESTAMP, Column, String, Uuid
 
-from utils.database import Base
-
-from users.schemas import UserRead, UserWithPassword
+from utils.models import IModel
 
 
-class User(Base):
+class User(IModel):
     __tablename__ = 'user'
 
-    uuid = Column(Uuid, primary_key=True, default=uuid4)
+    uuid = Column(Uuid, primary_key=True, default=uuid.uuid4)
     username = Column(String, nullable=False)
-    created_at = Column(TIMESTAMP, default=datetime.utcnow)
+    created_at = Column(TIMESTAMP, default=lambda: datetime.now(tz=None))
     roles = Column(String)
     hashed_password: str = Column(String(length=1024), nullable=False)
 
-    def to_read_model(self):
-        return UserRead(
-            uuid=self.uuid,
-            username=self.username,
-            created_at=self.created_at,
-            roles=loads(self.roles)
-        )
-
-    def to_with_password_model(self):
-        return UserWithPassword(
-            uuid=self.uuid,
-            username=self.username,
-            hashed_password=self.hashed_password,
-            created_at=self.created_at,
-            roles=loads(self.roles)
-        )
+    def dict(self):
+        return {
+            'uuid': self.uuid,
+            'username': self.username,
+            'hashed_password': self.hashed_password,
+            'created_at': self.created_at,
+            'roles': self.roles
+        }

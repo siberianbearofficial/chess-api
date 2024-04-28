@@ -26,20 +26,22 @@ class MovesService:
         if actor:
             filter_by['actor'] = actor.strip().lower()
         async with uow:
-            move_dicts = await self.moves_repository.all(uow.session, **filter_by)
+            move_dicts = await self.moves_repository.get_all(uow.session, **filter_by)
             if as_dict:
                 return move_dicts
-            return [self.move_dict_to_read_model(move_dict) for move_dict in move_dicts]
+            return [self.moves_dict_to_read_model(move_dict) for move_dict in move_dicts]
 
     async def get_move(self, uow: IUnitOfWork, move_uuid: uuid.UUID, as_dict: bool = False) -> MoveRead | dict:
         async with uow:
             move_dict = await self.moves_repository.get(uow.session, uuid=move_uuid)
+            if not move_dict:
+                return None
             if as_dict:
                 return move_dict
-            return self.move_dict_to_read_model(move_dict)
+            return self.moves_dict_to_read_model(move_dict)
 
     @staticmethod
-    def move_dict_to_read_model(move_dict: dict) -> MoveRead:
+    def moves_dict_to_read_model(move_dict: dict) -> MoveRead:
         return MoveRead(
             uuid=move_dict.get('uuid'),
             board=move_dict.get('board'),
@@ -51,15 +53,14 @@ class MovesService:
         )
 
     @staticmethod
-    def move_create_model_to_dict(move: MoveCreate):
-        move_dict = {
+    def moves_create_model_to_dict(move: MoveCreate):
+        return {
             'uuid': uuid.uuid4(),
             'board': move.board,
             'created_at': datetime.now(tz=None),
             'src': move.src,
             'dst': move.dst
         }
-        return move_dict
 
     async def add_move(self, uow: IUnitOfWork, move: MoveCreate):
         async with uow:
@@ -88,8 +89,8 @@ class MovesService:
             elif board.is_check():
                 board_dict['status'] = 'check'
                 board_dict['winner'] = None
-            await self.boards_repository.edit_one(uow.session, move.board, board_dict)
-            move_dict = self.move_create_model_to_dict(move)
+            await self.boards_repository.edit(uow.session, move.board, board_dict)
+            move_dict = self.moves_create_model_to_dict(move)
             move_dict['board_prev_state'] = prev_state
             dst_square = chess.SQUARE_NAMES.index(move.dst)
             if move.actor:
@@ -98,7 +99,7 @@ class MovesService:
                 move_dict['actor'] = 'white' if board.color_at(dst_square) else 'black'
             dst_piece = board.piece_at(dst_square)
             move_dict['figure'] = chess.PIECE_NAMES[0 if not dst_piece else dst_piece.piece_type]
-            await self.moves_repository.add_one(uow.session, move_dict)
+            await self.moves_repository.add(uow.session, move_dict)
 
             await uow.commit()
             return move_dict['uuid']
@@ -129,7 +130,7 @@ class MovesService:
                 board_dict['winner'] = None
                 board_dict['status'] = 'created'
 
-            await self.boards_repository.edit_one(uow.session, board_dict['uuid'], board_dict)
-            await self.moves_repository.delete_one(uow.session, move_uuid)
+            await self.boards_repository.edit(uow.session, board_dict['uuid'], board_dict)
+            await self.moves_repository.delete(uow.session, move_uuid)
             await uow.commit()
             return move_uuid
