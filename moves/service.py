@@ -1,5 +1,6 @@
 from datetime import datetime
 import uuid
+import chess.svg
 import chess
 
 from boards.exceptions import BoardNotFoundError
@@ -82,52 +83,99 @@ class MovesService:
             'promotion': move.promotion
         }
 
-    async def add_move(self, uow: IUnitOfWork, move: MoveCreate):
+    async def add_move(self, uow: IUnitOfWork, move: MoveCreate, illegal_allowed: bool = False):
         async with (uow):
             board_dict = await self.boards_repository.get(uow.session, uuid=move.board)
             if not board_dict:
                 raise BoardNotFoundError
+
             prev_state = board_dict['state']
-
             board = chess.Board(prev_state)
-
+            print(board.unicode())
             try:
-                if move.promotion is None:
-                    uci = f'{move.src}{move.dst}'
-                else:
-                    promotion = chess.PIECE_SYMBOLS[chess.PIECE_NAMES.index(move.promotion)]
-                    uci = f'{move.src}{move.dst}{promotion}'
-                board.push_uci(uci)  # в этот момент все отвалится, если был передан невалидный ход
+                uci = self.get_move_uci(move)
+                print(repr(uci))
+                board.push_uci(uci)
             except:
                 raise IllegalMoveDenied
 
             board_dict['state'] = board.fen()
-            outcome = board.outcome()
-            if outcome:
-                board_dict['status'] = outcome.termination.name.lower()
-                if outcome.winner is None:
-                    board_dict['winner'] = None
-                elif outcome.winner:
-                    board_dict['winner'] = 'white'
-                else:
-                    board_dict['winner'] = 'black'
-            elif board.is_check():
-                board_dict['status'] = 'check'
-                board_dict['winner'] = None
+            board_dict['status'], board_dict['winner'] = self.get_board_status_and_winner(board)
             await self.boards_repository.edit(uow.session, move.board, board_dict)
+
             move_dict = self.moves_create_model_to_dict(move)
             move_dict['board_prev_state'] = prev_state
-            dst_square = chess.SQUARE_NAMES.index(move.dst)
-            if move.actor:
-                move_dict['actor'] = move.actor
-            else:
-                move_dict['actor'] = 'white' if board.color_at(dst_square) else 'black'
-            dst_piece = board.piece_at(dst_square)
-            move_dict['figure'] = chess.PIECE_NAMES[0 if not dst_piece else dst_piece.piece_type]
+            move_dict['actor'] = self.get_move_actor(board, move, illegal_allowed)
+            move_dict['figure'] = self.get_move_figure(board, move)
             await self.moves_repository.add(uow.session, move_dict)
 
             await uow.commit()
             return move_dict['uuid']
+
+    @staticmethod
+    def get_move_uci(move: MoveCreate | MoveRead | LegalMove):
+        if move.promotion is None:
+            return f'{move.src}{move.dst}'
+        promotion = chess.piece_symbol(chess.PIECE_NAMES.index(move.promotion))
+        return f'{move.src}{move.dst}{promotion}'
+
+    @staticmethod
+    def get_move_figure(board: chess.Board, move: MoveCreate | MoveRead | LegalMove):
+        dst_piece = board.piece_at(chess.parse_square(move.dst))
+        if not dst_piece:
+            return None
+        return chess.piece_name(dst_piece.piece_type)
+
+    @classmethod
+    def get_move_actor(cls, board: chess.Board, move: MoveCreate | MoveRead | LegalMove, illegal_allowed: bool = False):
+        actor_from_lib = cls._color_name(board.color_at(chess.parse_square(move.dst)))
+        print(repr(actor_from_lib))
+        print(repr(move.actor))
+        if move.actor:
+            if illegal_allowed or move.actor == actor_from_lib:
+                return move.actor
+            raise IllegalMoveDenied  # другая ошибка, по-хорошему
+        return actor_from_lib
+
+    @classmethod
+    def get_board_status_and_winner(cls, board: chess.Board | str):
+        if isinstance(board, str):
+            board = chess.Board(board)
+
+        if board.is_variant_loss():
+            return 'variant_loss', cls._color_name(not board.turn)
+        if board.is_variant_win():
+            return 'variant_win', cls._color_name(board.turn)
+        if board.is_variant_draw():
+            return 'variant_draw', None
+
+        if board.is_checkmate():
+            return 'checkmate', cls._color_name(not board.turn)
+        if board.is_insufficient_material():
+            return 'insufficient_material', None
+        if not any(board.generate_legal_moves()):
+            return 'stalemate', None
+
+        if board.is_seventyfive_moves():
+            return 'seventyfive_moves', None
+        if board.is_fivefold_repetition():
+            return 'fivefold_repetition', None
+
+        if board.is_check():
+            return 'check', None
+
+        if board.fen() != chess.STARTING_FEN:
+            return 'progress', None
+
+        return 'created', None
+
+    @staticmethod
+    def _color_name(color: chess.Color) -> str | None:
+        if color == chess.WHITE:
+            return 'white'
+        if color == chess.BLACK:
+            return 'black'
+        return None
 
     async def clear_old_moves(self, uow: IUnitOfWork, board_uuid: uuid.UUID):
         pass
@@ -135,25 +183,10 @@ class MovesService:
     async def undo_move(self, uow: IUnitOfWork, move_uuid: uuid.UUID):
         async with uow:
             move_dict = await self.moves_repository.get(uow.session, uuid=move_uuid)
+
             board_dict = await self.boards_repository.get(uow.session, uuid=move_dict['board'])
             board_dict['state'] = move_dict['board_prev_state']
-
-            board = chess.Board(board_dict['state'])
-            outcome = board.outcome()
-            if outcome:
-                board_dict['status'] = outcome.termination.name.lower()
-                if outcome.winner is None:
-                    board_dict['winner'] = None
-                elif outcome.winner:
-                    board_dict['winner'] = 'white'
-                else:
-                    board_dict['winner'] = 'black'
-            elif board.is_check():
-                board_dict['winner'] = None
-                board_dict['status'] = 'check'
-            else:
-                board_dict['winner'] = None
-                board_dict['status'] = 'created'
+            board_dict['status'], board_dict['winner'] = self.get_board_status_and_winner(board_dict['state'])
 
             await self.boards_repository.edit(uow.session, board_dict['uuid'], board_dict)
             await self.moves_repository.delete(uow.session, move_uuid)
