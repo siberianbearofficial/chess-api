@@ -93,41 +93,41 @@ class MovesService:
             board = chess.Board(prev_state)
             print(board.unicode())
             try:
-                uci = self.get_move_uci(move)
+                uci = self._get_move_uci(move)
                 print(repr(uci))
                 board.push_uci(uci)
             except:
                 raise IllegalMoveDenied
 
             board_dict['state'] = board.fen()
-            board_dict['status'], board_dict['winner'] = self.get_board_status_and_winner(board)
+            board_dict['status'], board_dict['winner'] = self._get_board_status_and_winner(board)
             await self.boards_repository.edit(uow.session, move.board, board_dict)
 
             move_dict = self.moves_create_model_to_dict(move)
             move_dict['board_prev_state'] = prev_state
-            move_dict['actor'] = self.get_move_actor(board, move, illegal_allowed)
-            move_dict['figure'] = self.get_move_figure(board, move)
+            move_dict['actor'] = self._get_move_actor(board, move, illegal_allowed)
+            move_dict['figure'] = self._get_move_figure(board, move)
             await self.moves_repository.add(uow.session, move_dict)
 
             await uow.commit()
             return move_dict['uuid']
 
     @staticmethod
-    def get_move_uci(move: MoveCreate | MoveRead | LegalMove):
+    def _get_move_uci(move: MoveCreate | MoveRead | LegalMove):
         if move.promotion is None:
             return f'{move.src}{move.dst}'
         promotion = chess.piece_symbol(chess.PIECE_NAMES.index(move.promotion))
         return f'{move.src}{move.dst}{promotion}'
 
     @staticmethod
-    def get_move_figure(board: chess.Board, move: MoveCreate | MoveRead | LegalMove):
+    def _get_move_figure(board: chess.Board, move: MoveCreate | MoveRead | LegalMove):
         dst_piece = board.piece_at(chess.parse_square(move.dst))
         if not dst_piece:
             return None
         return chess.piece_name(dst_piece.piece_type)
 
     @classmethod
-    def get_move_actor(cls, board: chess.Board, move: MoveCreate | MoveRead | LegalMove, illegal_allowed: bool = False):
+    def _get_move_actor(cls, board: chess.Board, move: MoveCreate | MoveRead | LegalMove, illegal_allowed: bool = False):
         actor_from_lib = cls._color_name(board.color_at(chess.parse_square(move.dst)))
         print(repr(actor_from_lib))
         print(repr(move.actor))
@@ -138,7 +138,7 @@ class MovesService:
         return actor_from_lib
 
     @classmethod
-    def get_board_status_and_winner(cls, board: chess.Board | str):
+    def _get_board_status_and_winner(cls, board: chess.Board | str):
         if isinstance(board, str):
             board = chess.Board(board)
 
@@ -178,7 +178,12 @@ class MovesService:
         return None
 
     async def clear_old_moves(self, uow: IUnitOfWork, board_uuid: uuid.UUID):
-        pass
+        async with uow:
+            moves_dict = await self.moves_repository.get_all(uow.session, board=board_uuid)
+            moves_dict.sort(key=lambda m: m['created_at'])
+            for move_dict in moves_dict[:-1]:
+                await self.moves_repository.delete(uow.session, uuid=move_dict['uuid'])
+            await uow.commit()
 
     async def undo_move(self, uow: IUnitOfWork, move_uuid: uuid.UUID):
         async with uow:
@@ -186,7 +191,7 @@ class MovesService:
 
             board_dict = await self.boards_repository.get(uow.session, uuid=move_dict['board'])
             board_dict['state'] = move_dict['board_prev_state']
-            board_dict['status'], board_dict['winner'] = self.get_board_status_and_winner(board_dict['state'])
+            board_dict['status'], board_dict['winner'] = self._get_board_status_and_winner(board_dict['state'])
 
             await self.boards_repository.edit(uow.session, board_dict['uuid'], board_dict)
             await self.moves_repository.delete(uow.session, move_uuid)

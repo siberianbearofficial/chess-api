@@ -110,6 +110,7 @@ async def post_move_handler(uow: UOWDep,
         raise NotAuthenticatedError
 
     uuid = await moves_service.add_move(uow, move)
+    await moves_service.clear_old_moves(uow, move.board)
     return {
         'data': str(uuid),
         'detail': 'Move was added.'
