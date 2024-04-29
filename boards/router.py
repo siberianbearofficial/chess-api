@@ -30,6 +30,13 @@ async def get_boards_handler(boards_service: BoardsServiceDep,
     if not author:
         raise NotAuthenticatedError
 
+    if owner and not equal_uuids(owner, author.uuid):
+        raise ReadBoardDenied
+    if invited and not equal_uuids(invited, author.uuid):
+        raise ReadBoardDenied
+    if not owner and not invited:
+        raise ReadBoardDenied
+
     boards = await boards_service.get_boards(uow, owner=owner, invited=invited)
     return {
         'data': boards,
@@ -49,6 +56,10 @@ async def get_board_handler(authentication_service: AuthenticationServiceDep,
         raise NotAuthenticatedError
 
     board = await boards_service.get_board(uow, uuid)
+
+    if not equal_uuids(board.owner, author.uuid) and author.uuid not in board.invited:
+        raise ReadBoardDenied
+
     if not board:
         raise BoardNotFoundError
 
@@ -68,6 +79,9 @@ async def post_board_handler(uow: UOWDep,
     author = await authentication_service.authenticated_user(uow, authorization)
     if not author:
         raise NotAuthenticatedError
+
+    if not equal_uuids(board.owner, author.uuid):
+        raise InsertBoardDenied
 
     uuid = await boards_service.add_board(uow, board)
     return {
@@ -126,6 +140,9 @@ async def put_board_handler(uow: UOWDep,
     if not board_with_this_uuid:
         raise BoardNotFoundError
 
+    if not equal_uuids(board_with_this_uuid.owner, author.uuid):
+        raise UpdateBoardDenied
+
     await boards_service.update_board(uow, uuid, board)
     return {
         'data': None,
@@ -147,6 +164,9 @@ async def delete_board_handler(uow: UOWDep,
     board_with_this_uuid = await boards_service.get_board(uow, uuid)
     if not board_with_this_uuid:
         raise BoardNotFoundError
+
+    if not equal_uuids(board_with_this_uuid.owner, author.uuid):
+        raise DeleteBoardDenied
 
     uuid = await boards_service.delete_board(uow, uuid)
     return {
