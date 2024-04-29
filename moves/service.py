@@ -49,14 +49,16 @@ class MovesService:
             board = chess.Board(board_dict['state'])
             moves = list()
             for move in board.legal_moves:
-                moves.append(LegalMove(
-                    board=board_uuid,
-                    actor=actor or ('white' if board.color_at(move.from_square) else 'black'),
-                    src=chess.square_name(move.from_square),
-                    dst=chess.square_name(move.to_square),
-                    figure=chess.piece_name(board.piece_at(move.from_square).piece_type),
-                    promotion=None if (move.promotion is None) else chess.piece_name(move.promotion)
-                ))
+                actor_from_lib = self._color_name(board.color_at(move.from_square))
+                if not actor or actor == actor_from_lib:
+                    moves.append(LegalMove(
+                        board=board_uuid,
+                        actor=actor_from_lib,
+                        src=chess.square_name(move.from_square),
+                        dst=chess.square_name(move.to_square),
+                        figure=chess.piece_name(board.piece_at(move.from_square).piece_type),
+                        promotion=None if (move.promotion is None) else chess.piece_name(move.promotion)
+                    ))
             return moves
 
     @staticmethod
@@ -129,8 +131,6 @@ class MovesService:
     @classmethod
     def _get_move_actor(cls, board: chess.Board, move: MoveCreate | MoveRead | LegalMove, illegal_allowed: bool = False):
         actor_from_lib = cls._color_name(board.color_at(chess.parse_square(move.dst)))
-        print(repr(actor_from_lib))
-        print(repr(move.actor))
         if move.actor:
             if illegal_allowed or move.actor == actor_from_lib:
                 return move.actor

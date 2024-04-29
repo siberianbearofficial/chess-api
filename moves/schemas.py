@@ -24,7 +24,7 @@ class MoveCreate(BaseModel):
     actor: Literal['white', 'black'] | None = None
     src: str
     dst: str
-    promotion: Literal['queen', 'king', 'rook', 'bishop', 'knight', 'pawn'] | None
+    promotion: Literal['queen', 'king', 'rook', 'bishop', 'knight', 'pawn'] | None = None
 
 
 class LegalMove(BaseModel):
@@ -32,7 +32,7 @@ class LegalMove(BaseModel):
     actor: Literal['white', 'black']
     src: str
     dst: str
-    figure: Literal['queen', 'king', 'rook', 'bishop', 'knight', 'pawn'] | None
+    figure: Literal['queen', 'king', 'rook', 'bishop', 'knight', 'pawn']
     promotion: Literal['queen', 'king', 'rook', 'bishop', 'knight', 'pawn'] | None
 
     class Config:
