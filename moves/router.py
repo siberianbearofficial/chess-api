@@ -157,7 +157,7 @@ async def post_move_handler(uow: UOWDep,
     if not equal_uuids(b.owner, author.uuid) and author.uuid not in b.invited:
         raise InsertMoveDenied
 
-    uuid = await moves_service.add_move(uow, move)
+    uuid = await moves_service.add_move(uow, move, author.uuid)
     await moves_service.clear_old_moves(uow, move.board)
     return {
         'data': str(uuid),
@@ -190,7 +190,7 @@ async def delete_move_handler(uow: UOWDep,
 
     moves = sorted(moves, key=lambda m: m.created_at)
 
-    uuid = await moves_service.undo_move(uow, moves[-1].uuid)
+    uuid = await moves_service.undo_move(uow, moves[-1].uuid, author.uuid)
     return {
         'data': str(uuid),
         'detail': 'Move was deleted.'

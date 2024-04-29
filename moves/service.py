@@ -5,7 +5,8 @@ import chess
 
 from boards.exceptions import BoardNotFoundError
 from boards.repository import BoardsRepository
-from moves.exceptions import IllegalMoveDenied
+from moves.exceptions import IllegalMoveDenied, InsertMoveDenied, DeleteMoveDenied
+from utils.logic import equal_uuids
 from utils.unitofwork import IUnitOfWork
 
 from moves.repository import MovesRepository
@@ -85,7 +86,7 @@ class MovesService:
             'promotion': move.promotion
         }
 
-    async def add_move(self, uow: IUnitOfWork, move: MoveCreate, illegal_allowed: bool = False):
+    async def add_move(self, uow: IUnitOfWork, move: MoveCreate, user_uuid: uuid.UUID, illegal_allowed: bool = False):
         async with (uow):
             board_dict = await self.boards_repository.get(uow.session, uuid=move.board)
             if not board_dict:
@@ -108,6 +109,10 @@ class MovesService:
             move_dict = self.moves_create_model_to_dict(move)
             move_dict['board_prev_state'] = prev_state
             move_dict['actor'] = self._get_move_actor(board, move, illegal_allowed)
+
+            if not equal_uuids(board_dict[move_dict['actor']], user_uuid):
+                raise InsertMoveDenied
+
             move_dict['figure'] = self._get_move_figure(board, move)
             await self.moves_repository.add(uow.session, move_dict)
 
@@ -185,11 +190,14 @@ class MovesService:
                 await self.moves_repository.delete(uow.session, uuid=move_dict['uuid'])
             await uow.commit()
 
-    async def undo_move(self, uow: IUnitOfWork, move_uuid: uuid.UUID):
+    async def undo_move(self, uow: IUnitOfWork, move_uuid: uuid.UUID, user_uuid: uuid.UUID):
         async with uow:
             move_dict = await self.moves_repository.get(uow.session, uuid=move_uuid)
 
             board_dict = await self.boards_repository.get(uow.session, uuid=move_dict['board'])
+            if not equal_uuids(board_dict[move_dict['actor']], user_uuid):
+                raise DeleteMoveDenied
+
             board_dict['state'] = move_dict['board_prev_state']
             board_dict['status'], board_dict['winner'] = self._get_board_status_and_winner(board_dict['state'])
 
