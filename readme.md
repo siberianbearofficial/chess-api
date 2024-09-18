@@ -5,7 +5,7 @@ Readiness probe: `/readyz` \
 Publication readiness probe: `/publication/ready` \
 Version: `/version` \
 Prefix: `/api/v1` \
-Authorization: `Bearer {token}` - подставляется `id_token` из Google OAuth2
+Authorization: `Bearer {token}` - возвращается при авторизации
 
 ## Boards
 
